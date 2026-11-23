@@ -92,17 +92,29 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
 .more{display:block;width:calc(100% - 20px);margin:8px 10px 0;height:46px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--sub);font:600 14px Inter;cursor:pointer}
 .more:hover,.more:focus-visible{background:#13203a;outline:none}
 .note{color:var(--mute);font-size:12px;padding:10px 20px 14px;border-top:1px solid var(--line)}
+.go{display:none}
 @media(max-width:860px){
  .app{grid-template-columns:1fr;height:auto}
- .stage{height:62vh;min-height:420px}
- .side{height:auto;border-left:0;border-top:1px solid var(--line)}
+ .stage{height:100vh;height:100svh;min-height:520px}
+ .top{left:16px;right:16px;top:14px;text-align:center}
+ .badge{font-size:11px;padding:4px 12px}
+ h1{font-size:24px;margin:8px 0 0}
+ .lede{display:none}
+ .count{left:0;right:0;bottom:84px;justify-content:center;gap:36px;text-align:center}
+ .count b{font-size:30px}
+ .count span{font-size:10px}
+ .go{display:flex;align-items:center;justify-content:center;gap:8px;position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);height:50px;padding:0 26px;border-radius:99px;border:0;background:var(--gold);color:#080D19;font:700 15px Inter;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.45);white-space:nowrap}
+ .go svg{width:18px;height:18px;animation:bob 1.6s ease-in-out infinite}
+ .side{height:auto;border-left:0;border-top:1px solid var(--line);scroll-margin-top:0}
  .list{max-height:none;overflow:visible}
- .hint{display:none}
- .card{top:auto;bottom:12px;left:12px;right:12px;width:auto;padding:12px 14px}
+ .hint{display:block;left:0;right:0;bottom:150px;text-align:center;font-size:12px}
+ .card{top:auto;bottom:84px;left:12px;right:12px;width:auto;padding:12px 14px}
  .card .big b{font-size:40px}
  .days{height:56px;margin-top:8px}
- .stage:has(.card.on) .count{display:none}
+ .stage:has(.card.on) .count,.stage:has(.card.on) .hint{display:none}
 }
+@keyframes bob{50%{transform:translateY(3px)}}
+@media(prefers-reduced-motion:reduce){.go svg{animation:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style>
 </head>
@@ -124,8 +136,9 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
    <div class="big"><b id="kt">0</b><span id="kl">follower votes</span></div>
    <div class="days" id="kd"></div>
   </section>
+  <button class="go" id="go" type="button">See the ranking<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
  </main>
- <aside class="side">
+ <aside class="side" id="ranking">
   <div class="sh">
    <h2>Ranking</h2>
    <p id="upd">Total follower votes since Day 1</p>
@@ -184,6 +197,8 @@ $('#q').addEventListener('input',renderList);
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.f;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderList()}));
 $('#list').addEventListener('click',e=>{if(e.target.id==='more'){showAll=true;renderList();return}const r=e.target.closest('.row');if(r)select(r.dataset.n,true)});
 $('#cx').addEventListener('click',()=>{select(null)});
+$('#go').addEventListener('click',()=>$('#ranking').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));
+if(matchMedia('(pointer:coarse)').matches)document.querySelector('.hint').textContent='Drag to spin · pinch to zoom · tap a country';
 
 // ---------- card ----------
 function showCard(n){
@@ -230,7 +245,14 @@ S.add(new THREE.AmbientLight(0x8899bb,.75));const sun=new THREE.DirectionalLight
 // stars
 {const g=new THREE.BufferGeometry(),a=[];for(let i=0;i<900;i++){const v=new THREE.Vector3().randomDirection?new THREE.Vector3().randomDirection():new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();a.push(v.x*30,v.y*30,v.z*30)}g.setAttribute('position',new THREE.Float32BufferAttribute(a,3));S.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8fa3c7,size:.06})))}
 let lon=10,lat=25,dist=4.3,tLon=lon,tLat=lat,tDist=dist,auto=true;
-function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);C.aspect=w/h;C.updateProjectionMatrix();tDist=Math.max(tDist,w<h?4.6:4.0)}
+function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);C.aspect=w/h;
+ // portrait: nudge the globe a little down so the title never covers it
+ if(w<h)C.setViewOffset(w,h,0,-h*.03,w,h);else C.clearViewOffset();
+ C.updateProjectionMatrix();
+ // distance at which the whole globe fits ~86% of the screen width (tall phones need more room)
+ const tanH=Math.tan(C.fov*Math.PI/360)*C.aspect;FIT=w<h?Math.max(4.6,1/Math.sin(Math.atan(.86*tanH))):4.0;MAXD=Math.max(7,FIT+1);
+ const o=w<h;if(fitted!==o){tDist=FIT;if(fitted===null)dist=FIT;fitted=o}}
+let FIT=4.0,MAXD=7,fitted=null;
 new ResizeObserver(size).observe(cv);
 // crisp vector borders drawn in 3D (sharp at any zoom)
 function lineGeo(list,r){const a=[];list.forEach(f=>f.p.forEach(P=>P.forEach(ring=>{for(let i=0;i<ring.length-1;i++){const[x1,y1]=ring[i],[x2,y2]=ring[i+1];
@@ -247,11 +269,11 @@ const dirOf=(la,lo)=>{const ph=(lo+180)*Math.PI/180,th=la*Math.PI/180;return new
 let drag=null,moved=0;const pts=new Map();
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);drag=[e.clientX,e.clientY];moved=0;auto=false});
 cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const prev=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
- if(pts.size===2){const [a,b]=[...pts.values()];const d0=Math.hypot(prev[0]-(a===pts.get(e.pointerId)?b[0]:a[0]),prev[1]-(a===pts.get(e.pointerId)?b[1]:a[1])),d1=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d0>0)tDist=Math.min(7,Math.max(1.6,tDist*d0/d1));moved+=10;return}
+ if(pts.size===2){const [a,b]=[...pts.values()];const d0=Math.hypot(prev[0]-(a===pts.get(e.pointerId)?b[0]:a[0]),prev[1]-(a===pts.get(e.pointerId)?b[1]:a[1])),d1=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d0>0)tDist=Math.min(MAXD,Math.max(1.6,tDist*d0/d1));moved+=10;return}
  const dx=e.clientX-prev[0],dy=e.clientY-prev[1];moved+=Math.abs(dx)+Math.abs(dy);const k=.25*(tDist-1)/2.6;tLon-=dx*k;tLat=Math.max(-80,Math.min(80,tLat+dy*k))});
 const up=e=>{pts.delete(e.pointerId);if(moved<6&&e.type==='pointerup')pick(e)};
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
-cv.addEventListener('wheel',e=>{e.preventDefault();tDist=Math.min(7,Math.max(1.6,tDist*(1+e.deltaY*.0012)));auto=false},{passive:false});
+cv.addEventListener('wheel',e=>{e.preventDefault();tDist=Math.min(MAXD,Math.max(1.6,tDist*(1+e.deltaY*.0012)));auto=false},{passive:false});
 const ray=new THREE.Raycaster(),m=new THREE.Vector2();
 function inPoly(r,x,y){let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const[xi,yi]=r[i],[xj,yj]=r[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c}
 function pick(e){const b=cv.getBoundingClientRect();m.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(m,C);const h=ray.intersectObject(globe)[0];if(!h){select(null);return}
@@ -260,7 +282,7 @@ function pick(e){const b=cv.getBoundingClientRect();m.set((e.clientX-b.left)/b.w
 function select(n,fly){sel=n;paint();showCard(n);renderList();
  try{history.replaceState(null,'',n?'#'+slug(n):location.pathname+location.search)}catch(e){}
  if(n){const f=GEO.find(g=>g.n===n);if(fly&&f){tLon=f.c[0];tLat=f.c[1];tDist=Math.min(tDist,2.6);auto=false}
-  const r=document.querySelector('.row.sel');if(r&&!fly)r.scrollIntoView({block:'nearest'});
+  const r=document.querySelector('.row.sel');if(r&&!fly&&innerWidth>860)r.scrollIntoView({block:'nearest'});
   if(fly&&innerWidth<=860)cv.scrollIntoView({behavior:'smooth',block:'start'})}}
 function fromHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const c=DATA.countries.find(c=>slug(c.n)===h);if(c){if(c.up&&filter==='under'){filter='all';document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.f==='all'))}showAll=true;select(c.n,true)}}
 addEventListener('hashchange',()=>DATA&&fromHash());
