@@ -95,10 +95,10 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
 .go{display:none}
 .tog{display:none}
 @media(min-width:861px){
- .app{display:block;position:relative;overflow:hidden}
+ .app{display:block;position:relative;overflow:clip}
  .stage{position:absolute;inset:0}
- .side{position:absolute;top:0;right:0;bottom:0;width:400px;z-index:3;transition:transform .35s ease;box-shadow:-20px 0 50px rgba(0,0,0,.35)}
- .app.closed .side{transform:translateX(100%);box-shadow:none}
+ .side{position:absolute;top:0;right:0;bottom:0;width:400px;z-index:3;transition:transform .35s ease,visibility 0s;box-shadow:-20px 0 50px rgba(0,0,0,.35)}
+ .app.closed .side{transform:translateX(100%);box-shadow:none;visibility:hidden;transition:transform .35s ease,visibility 0s .35s}
  .tog{display:flex;align-items:center;gap:6px;position:absolute;top:20px;right:416px;z-index:4;height:38px;padding:0 12px 0 16px;border-radius:99px;border:1px solid var(--line);background:rgba(12,20,38,.92);color:var(--sub);font:600 13px Inter;cursor:pointer;backdrop-filter:blur(8px);transition:right .35s ease}
  .tog:hover,.tog:focus-visible{color:var(--ink);border-color:var(--rim);outline:none}
  .tog svg{width:16px;height:16px;transition:transform .35s}
@@ -214,7 +214,7 @@ $('#q').addEventListener('input',renderList);
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.f;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderList()}));
 $('#list').addEventListener('click',e=>{if(e.target.id==='more'){showAll=true;renderList();return}const r=e.target.closest('.row');if(r)select(r.dataset.n,true)});
 $('#cx').addEventListener('click',()=>{select(null)});
-$('#tog').addEventListener('click',()=>{const a=$('.app'),c=a.classList.toggle('closed');$('#tog').setAttribute('aria-expanded',!c);$('#tog span').textContent=c?'Show ranking':'Hide ranking'});
+$('#tog').addEventListener('click',()=>{const a=$('.app'),c=a.classList.toggle('closed');$('#tog').setAttribute('aria-expanded',!c);$('#tog span').textContent=c?'Show ranking':'Hide ranking';const r=!c&&document.querySelector('.row.sel');if(r)r.scrollIntoView({block:'nearest'})});
 $('#go').addEventListener('click',()=>$('#ranking').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));
 if(matchMedia('(pointer:coarse)').matches)document.querySelector('.hint').textContent='Drag to spin · pinch to zoom · tap a country';
 
@@ -301,7 +301,7 @@ function pick(e){const b=cv.getBoundingClientRect();m.set((e.clientX-b.left)/b.w
 function select(n,fly){sel=n;paint();showCard(n);renderList();
  try{history.replaceState(null,'',n?'#'+slug(n):location.pathname+location.search)}catch(e){}
  if(n){const f=GEO.find(g=>g.n===n);if(fly&&f){tLon=f.c[0];tLat=f.c[1];tDist=Math.min(tDist,2.6);auto=false}
-  const r=document.querySelector('.row.sel');if(r&&!fly&&innerWidth>860)r.scrollIntoView({block:'nearest'});
+  const r=document.querySelector('.row.sel');if(r&&!fly&&innerWidth>860&&!$('.app').classList.contains('closed'))r.scrollIntoView({block:'nearest'});
   if(fly&&innerWidth<=860)cv.scrollIntoView({behavior:'smooth',block:'start'})}}
 function fromHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const c=DATA.countries.find(c=>slug(c.n)===h);if(c){if(c.up&&filter==='under'){filter='all';document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.f==='all'))}showAll=true;select(c.n,true)}}
 addEventListener('hashchange',()=>DATA&&fromHash());
