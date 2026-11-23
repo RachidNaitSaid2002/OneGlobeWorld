@@ -93,6 +93,22 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
 .more:hover,.more:focus-visible{background:#13203a;outline:none}
 .note{color:var(--mute);font-size:12px;padding:10px 20px 14px;border-top:1px solid var(--line)}
 .go{display:none}
+.tog{display:none}
+@media(min-width:861px){
+ .app{display:block;position:relative;overflow:hidden}
+ .stage{position:absolute;inset:0}
+ .side{position:absolute;top:0;right:0;bottom:0;width:400px;z-index:3;transition:transform .35s ease;box-shadow:-20px 0 50px rgba(0,0,0,.35)}
+ .app.closed .side{transform:translateX(100%);box-shadow:none}
+ .tog{display:flex;align-items:center;gap:6px;position:absolute;top:20px;right:416px;z-index:4;height:38px;padding:0 12px 0 16px;border-radius:99px;border:1px solid var(--line);background:rgba(12,20,38,.92);color:var(--sub);font:600 13px Inter;cursor:pointer;backdrop-filter:blur(8px);transition:right .35s ease}
+ .tog:hover,.tog:focus-visible{color:var(--ink);border-color:var(--rim);outline:none}
+ .tog svg{width:16px;height:16px;transition:transform .35s}
+ .app.closed .tog{right:20px}
+ .app.closed .tog svg{transform:rotate(180deg)}
+ .card{top:72px;right:416px;transition:right .35s ease}
+ .app.closed .card{right:20px}
+ .hint{left:0;right:0;text-align:center}
+}
+@media(prefers-reduced-motion:reduce){.side,.tog,.tog svg,.card{transition:none}}
 @media(max-width:860px){
  .app{grid-template-columns:1fr;height:auto}
  .stage{height:100vh;height:100svh;min-height:520px}
@@ -138,6 +154,7 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
   </section>
   <button class="go" id="go" type="button">See the ranking<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
  </main>
+ <button class="tog" id="tog" type="button" aria-controls="ranking" aria-expanded="true"><span>Hide ranking</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
  <aside class="side" id="ranking">
   <div class="sh">
    <h2>Ranking</h2>
@@ -197,6 +214,7 @@ $('#q').addEventListener('input',renderList);
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.f;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderList()}));
 $('#list').addEventListener('click',e=>{if(e.target.id==='more'){showAll=true;renderList();return}const r=e.target.closest('.row');if(r)select(r.dataset.n,true)});
 $('#cx').addEventListener('click',()=>{select(null)});
+$('#tog').addEventListener('click',()=>{const a=$('.app'),c=a.classList.toggle('closed');$('#tog').setAttribute('aria-expanded',!c);$('#tog span').textContent=c?'Show ranking':'Hide ranking'});
 $('#go').addEventListener('click',()=>$('#ranking').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));
 if(matchMedia('(pointer:coarse)').matches)document.querySelector('.hint').textContent='Drag to spin · pinch to zoom · tap a country';
 
@@ -246,12 +264,13 @@ S.add(new THREE.AmbientLight(0x8899bb,.75));const sun=new THREE.DirectionalLight
 {const g=new THREE.BufferGeometry(),a=[];for(let i=0;i<900;i++){const v=new THREE.Vector3().randomDirection?new THREE.Vector3().randomDirection():new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();a.push(v.x*30,v.y*30,v.z*30)}g.setAttribute('position',new THREE.Float32BufferAttribute(a,3));S.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8fa3c7,size:.06})))}
 let lon=10,lat=25,dist=4.3,tLon=lon,tLat=lat,tDist=dist,auto=true;
 function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);C.aspect=w/h;
- // portrait: nudge the globe a little up, away from the stats and button
- if(w<h)C.setViewOffset(w,h,0,h*.03,w,h);else C.clearViewOffset();
- C.updateProjectionMatrix();
+ view(true);
  // distance at which the whole globe fits ~86% of the screen width (tall phones need more room)
- const tanH=Math.tan(C.fov*Math.PI/360)*C.aspect;FIT=w<h?Math.max(4.6,1/Math.sin(Math.atan(.86*tanH))):4.0;MAXD=Math.max(7,FIT+1);
- const o=w<h;if(fitted!==o){tDist=FIT;if(fitted===null)dist=FIT;fitted=o}}
+ const tanV=Math.tan(C.fov*Math.PI/360),tanH=tanV*C.aspect;
+ // landscape: globe radius at most 41% of the height and 38% of the room left beside the ranking panel
+ const rp=Math.min(.41*h,.38*(w>860?w-400:w));
+ FIT=w<h?Math.max(4.6,1/Math.sin(Math.atan(.86*tanH))):Math.max(4.0,1/Math.sin(Math.atan(rp/(h/2)*tanV)));MAXD=Math.max(7,FIT+1);
+ const key=(w<h)+':'+FIT.toFixed(1);if(fitted!==key){tDist=FIT;if(fitted===null)dist=FIT;fitted=key}}
 let FIT=4.0,MAXD=7,fitted=null;
 new ResizeObserver(size).observe(cv);
 // crisp vector borders drawn in 3D (sharp at any zoom)
@@ -287,7 +306,15 @@ function select(n,fly){sel=n;paint();showCard(n);renderList();
 function fromHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const c=DATA.countries.find(c=>slug(c.n)===h);if(c){if(c.up&&filter==='under'){filter='all';document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.f==='all'))}showAll=true;select(c.n,true)}}
 addEventListener('hashchange',()=>DATA&&fromHash());
 const calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function loop(){requestAnimationFrame(loop);if(auto&&!calm)tLon+=.04;
+// view offset: portrait lifts the globe a little; on desktop the globe sits in the screen centre
+// and only slides left when the open ranking panel would cover it
+let offX=0;
+function view(force){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+ const open=w>860&&!document.querySelector('.app').classList.contains('closed');
+ const t=open&&w>=h?Math.max(0,Math.min(220,w/2+.42*h-(w-400)+30)):0;
+ const nx=offX+(t-offX)*.12;if(!force&&Math.abs(nx-offX)<.3&&Math.abs(t-offX)<.3)return;offX=Math.abs(t-nx)<.3?t:nx;
+ C.setViewOffset(w,h,offX,w<h?h*.03:0,w,h);C.updateProjectionMatrix()}
+function loop(){requestAnimationFrame(loop);if(auto&&!calm)tLon+=.04;view();
  let d=tLon-lon;d=((d+540)%360)-180;lon+=d*.12;lat+=(tLat-lat)*.12;dist+=(tDist-dist)*.12;
  C.position.copy(dirOf(lat,lon).multiplyScalar(dist));C.lookAt(0,0,0);sun.position.copy(dirOf(lat+25,lon-40).multiplyScalar(5));R.render(S,C)}
 loop();
