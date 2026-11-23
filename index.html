@@ -100,15 +100,15 @@ h1{font:600 clamp(30px,4vw,46px)/1.05 'Inter Tight',Inter,sans-serif;margin:10px
  .badge{font-size:11px;padding:4px 12px}
  h1{font-size:24px;margin:8px 0 0}
  .lede{display:none}
- .count{left:0;right:0;bottom:84px;justify-content:center;gap:36px;text-align:center}
- .count b{font-size:30px}
- .count span{font-size:10px}
- .go{display:flex;align-items:center;justify-content:center;gap:8px;position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);height:50px;padding:0 26px;border-radius:99px;border:0;background:var(--gold);color:#080D19;font:700 15px Inter;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.45);white-space:nowrap}
- .go svg{width:18px;height:18px;animation:bob 1.6s ease-in-out infinite}
+ .count{left:0;right:0;bottom:66px;justify-content:center;gap:30px;text-align:center}
+ .count b{font-size:22px}
+ .count span{font-size:9px;letter-spacing:.12em}
+ .go{display:flex;align-items:center;justify-content:center;gap:8px;position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);height:40px;padding:0 20px;border-radius:99px;border:0;background:var(--gold);color:#080D19;font:700 13px Inter;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.45);white-space:nowrap}
+ .go svg{width:15px;height:15px;animation:bob 1.6s ease-in-out infinite}
  .side{height:auto;border-left:0;border-top:1px solid var(--line);scroll-margin-top:0}
  .list{max-height:none;overflow:visible}
- .hint{display:block;left:0;right:0;bottom:150px;text-align:center;font-size:12px}
- .card{top:auto;bottom:84px;left:12px;right:12px;width:auto;padding:12px 14px}
+ .hint{display:block;left:0;right:0;bottom:114px;text-align:center;font-size:11px}
+ .card{top:auto;bottom:66px;left:12px;right:12px;width:auto;padding:12px 14px}
  .card .big b{font-size:40px}
  .days{height:56px;margin-top:8px}
  .stage:has(.card.on) .count,.stage:has(.card.on) .hint{display:none}
@@ -246,8 +246,8 @@ S.add(new THREE.AmbientLight(0x8899bb,.75));const sun=new THREE.DirectionalLight
 {const g=new THREE.BufferGeometry(),a=[];for(let i=0;i<900;i++){const v=new THREE.Vector3().randomDirection?new THREE.Vector3().randomDirection():new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();a.push(v.x*30,v.y*30,v.z*30)}g.setAttribute('position',new THREE.Float32BufferAttribute(a,3));S.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8fa3c7,size:.06})))}
 let lon=10,lat=25,dist=4.3,tLon=lon,tLat=lat,tDist=dist,auto=true;
 function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);C.aspect=w/h;
- // portrait: nudge the globe a little down so the title never covers it
- if(w<h)C.setViewOffset(w,h,0,-h*.03,w,h);else C.clearViewOffset();
+ // portrait: nudge the globe a little up, away from the stats and button
+ if(w<h)C.setViewOffset(w,h,0,h*.03,w,h);else C.clearViewOffset();
  C.updateProjectionMatrix();
  // distance at which the whole globe fits ~86% of the screen width (tall phones need more room)
  const tanH=Math.tan(C.fov*Math.PI/360)*C.aspect;FIT=w<h?Math.max(4.6,1/Math.sin(Math.atan(.86*tanH))):4.0;MAXD=Math.max(7,FIT+1);
